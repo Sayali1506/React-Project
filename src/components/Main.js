@@ -1,63 +1,70 @@
-import React, { useReducer, useEffect } from "react";
-import { Navigate, Route, Routes, useNavigate, BrowserRouter } from "react-router-dom";
-import Booking from "./Booking";
-import ConfirmedBooking from "./ConfirmedBooking";
-import Header from "./Header";
+import React, { useReducer, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import HomePage from '../pages/HomePage';
+import AboutPage from '../pages/AboutPage';
+import MenuPage from '../pages/MenuPage';
+import ReservationsPage from '../pages/ReservationsPage';
+import OrderOnlinePage from '../pages/OrderOnlinePage';
+import LoginPage from '../pages/LoginPage';
+import Nav from './Nav';
+import Footer from './Footer';
 
+// Import the fetchAPI function from your api.js file
+import { fetchAPI } from '../api/api'; // Adjust the path based on your project structure
+
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case 'UPDATE_TIMES':
+      return action.payload.availableTimes; // Set the state directly with the fetched data
+    default:
+      return state;
+  }
+};
+
+export const initializeTimes = async (dispatch) => {
+  try {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0];
+    const data = await fetchAPI(formattedDate);
+
+    // Update the dispatch call to correctly provide the data
+    dispatch({ type: 'UPDATE_TIMES', payload: { availableTimes: data } });
+  } catch (error) {
+    console.error('Error fetching available times:', error);
+  }
+};
+
+export const updateTimes = (state, dispatchData) => {
+  // Implement your updateTimes logic here
+  // For now, it returns the same times
+  return state;
+};
 
 const Main = () => {
+  const [availableTimes, dispatch] = useReducer(reducer, []);
 
-   const seededRandom = function (seed) {
-        var m = 2**35 - 31;
-        var a = 185852;
-        var s = seed % m;
-        return function () {
-            return (s = s * a % m) / m;
-        };
-    }
-
-    const fetchAPI = function(date) {
-        let result = [];
-        let random = seededRandom(date.getDate());
-
-        for(let i = 17; i <= 23; i++) {
-            if(random() < 0.5) {
-                result.push(i + ':00');
-            }
-            if(random() < 0.5) {
-                result.push(i + ':30');
-            }
-        }
-        return result;
-    };
-    const submitAPI = function(formData) {
-        return true;
-    };
-
-    const initialState = {availableTimes:  fetchAPI(new Date())}
-    const [state, dispatch] = useReducer(updateTimes, initialState);
-
-    function updateTimes(state, date) {
-        return {availableTimes: fetchAPI(new Date(date))}
-    }
-    const navigate = useNavigate();
-    function submitForm (formData) {
-        if (submitAPI(formData)) {
-            navigate("/confirmed")
-        }
-    }
-
-    return(
-        <main className="main">
-            <Routes>
-                <Route path="/" element={<Header />} />
-                <Route path="/booking" element={<Booking availableTimes={state} dispatch={dispatch} submitForm={submitForm}/>} />
-                <Route path="/confirmed" element={<ConfirmedBooking/> } />
-            </Routes>
-        </main>
+  useEffect(() => {
+    // Initialize times directly
+    initializeTimes(dispatch);
+  }, []); // Empty dependency array ensures the effect runs only once after mount
 
 
-    )
-}
+
+  return (
+    <Router>
+      <Nav />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/about" element={<AboutPage />} exact />
+        <Route path="/menu" element={<MenuPage />} />
+        <Route path="/reservations" element={<ReservationsPage availableTimes={availableTimes} dispatch={dispatch} />} />
+        <Route path="/order-online" element={<OrderOnlinePage />} />
+        <Route path="/login" element={<LoginPage />} />
+      </Routes>
+      <Footer />
+    </Router>
+  );
+};
 
 export default Main;
